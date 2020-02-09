@@ -372,7 +372,7 @@ def user_rating(handle):
     
     return True, [RatingChange(**x) for x in info['result']]
 
-def user_status(handle, **kwarg):
+def user_status(handle, **kwargs):
     """
     Returns submissions of specified user.
     Return value: Returns a list of Submission objects, sorted in decreasing 
@@ -534,7 +534,7 @@ class Problem(CodeforcesObject):
         self.dict_init(**kwargs)
 
 class ProblemStatistics(CodeforcesObject):
-    def __init_(self, **kwargs):
+    def __init__(self, **kwargs):
         self.contestId 	            = None  # Integer. Can be absent. Id of the contest, containing the problem.
         self.index              	= None  # String. Usually a letter of a letter, followed by a digit, that represent a problem index in a contest.
         self.solvedCount 	        = None  # Integer. Number of users, who solved the problem.
@@ -617,4 +617,4 @@ class ProblemResult(CodeforcesObject):
         self.rejectedAttemptCount   = None 	# Integer. Number of incorrect submissions.
         self.type                   = None	# Enum: PRELIMINARY, FINAL. If type is PRELIMINARY then points can decrease (if, for example, solution will fail during system test). Otherwise, party can only increase points for this problem by submitting better solutions.
         self.bestSubmissionTimeSeconds=None # Integer. Number of seconds after the start of the contest before the submission, that brought maximal amount of points for this problem.
-        self.dict(**kwargs)
+        self.dict_init(**kwargs)
