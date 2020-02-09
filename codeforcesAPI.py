@@ -13,7 +13,7 @@ List of self-made simple APIs
 
 def get_user_info(handle):
     """
-    Returns information about one or several users.
+    Returns information about one user
     """
 
     info = requests.get(f'https://codeforces.com/api/user.info?handles={handle}')
@@ -28,11 +28,12 @@ def get_user_info(handle):
     
     return (True, User(**info['result'][0]))
 
-def get_user_submissions(handle):
+def get_user_submissions(handle, count = 200):
     """
     Get submissions of an user
     """
-    info = requests.get(f'https://codeforces.com/api/user.status?handle={handle}')
+
+    info = requests.get(f'https://codeforces.com/api/user.status?handle={handle}&count={count}')
 
     if info.status_code != 200:
         return (0, None)
@@ -40,71 +41,8 @@ def get_user_submissions(handle):
     if info['status'] != 'OK':
         return (0, member_bad(info['comment']))
 
-    print(type(info))
-    print(type(info['result']))
-    print(type(info['result'][0]))
     return (1, [Submission(**x) for x in info['result']])
 
-def get_user_rating_changes(handle):
-    """
-    Get rating changes of an user
-    """
-    info = requests.get(f'https://codeforces.com/api/user.rating?handle={handle}')
-
-    if info.status_code != 200:
-        return (0, None)
-    if info['status'] != 'OK':
-        return (0, member_bad(info['comment']))
-    
-    return (1, [RatingChange(**x) for x in info['result']])
-
-def get_user_blog_entries(handle):
-    """
-    Get blog entries of an user
-    """
-    info = requests.get(f'https://codeforces.com/api/user.blogEntries?handle={handle}')
-
-    if info.status_code != 200:
-        return (0, None)
-    if info['status'] != 'OK':
-        return (0, member_bad(info['comment']))
-    
-    return (1, [BlogEntry(**x) for x in info['result']])
-
-def get_problems(tags):
-    """
-    Get problems in problemset. Can use tags (list).
-    """
-
-    url = f'https://codeforces.com/api/user.blogEntries?handle={handle}?'
-    if len(tags):
-        url += 'tags=' + ';'.join(tags)
-
-    info = requests.get(url)
-
-    if info.status_code != 200:
-        return (0, None)
-    if info['status'] != 'OK':
-        return (0, member_bad(info['comment']))
-    
-    return (1, [Problem(**x) for x in info['result']])
-
-def get_contest_standing(contestId, handles = [], showUnofficial = True):
-    """
-    Get standing of a contest.
-    """
-    url = f'https://codeforces.com/api/contest.standings?contestId={contestId}&showUnofficial={showUnofficial}'
-
-    if len(handles) > 0:
-        url += '&handles=' + ';'.join(handles)
-
-    info = request(url)
-    if info.status_code != 200:
-        return (0, None)
-    if info['status'] != 'OK':
-        return (0, member_bad(info['comment']))
-    
-    return (1, info['result'])
 
 """
 All given methods
@@ -316,7 +254,7 @@ def problemset_recentStatus(count, problemsetName = None):
     -   count (Required): 	Number of submissions to return. Can be up to 1000.
     -   problemsetName: 	Custom problemset's short name, like 'acmsguru'
     """
-    
+
     url = f'https://codeforces.com/api/problemset.recentStatus?count={count}'
     if problemsetName != None:
         url += '&problemsetName={problemsetName}'
