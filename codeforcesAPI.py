@@ -19,26 +19,14 @@ def get_user_info(handle):
     info = requests.get(f'https://codeforces.com/api/user.info?handles={handle}')
 
     if info.status_code != 200:
-        return (0, None)
+        return (False, None)
     
     info = info.json()
 
     if info['status'] != 'OK':
-        return (0, info['comment'])
+        return (False, info['comment'])
     
-    return (1, User(**info['result'][0]))
-
-def blogEntry_comments(blogEntryId):
-    url = f'https://codeforces.com/api/blogEntry.comments?blogEntryId={blogEntryId}'
-
-    info = requests.get(url)
-    if info.status_code != 200:
-        return (0, None)
-    info = info.json()
-    if info['status'] != 'OK':
-        return (0, info['comment'])
-    
-    return True, [Comment(**x) for x in info['result']]
+    return (True, User(**info['result'][0]))
 
 def get_user_submissions(handle):
     """
@@ -122,6 +110,354 @@ def get_contest_standing(contestId, handles = [], showUnofficial = True):
 All given methods
 (https://codeforces.com/apiHelp/methods)
 """
+
+def blogEntry_comments(blogEntryId):
+    """
+    Returns a list of comments to the specified blog entry.
+    Return value: A list of Comment objects.
+
+    Parameter:
+    -   blogEntryId (Required): 	Id of the blog entry.
+    """
+
+    url = f'https://codeforces.com/api/blogEntry.comments?blogEntryId={blogEntryId}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [Comment(**x) for x in info['result']]
+
+def blogEntry_view(blogEntryId):
+    """
+    Returns blog entry.
+    Return value: Returns a BlogEntry object in full version.
+
+    Parameter:
+    -   blogEntryId (Required): 	Id of the blog entry.
+    """
+
+    url = f'https://codeforces.com/api/blogEntry.view?blogEntryId={blogEntryId}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, BlogEntry(**info['result'])
+
+def contest_hacks(contestId):
+    """
+    Returns list of hacks in the specified contests. Full 
+    information about hacks is available only after sometime 
+    after the contest end. During the contest user can see 
+    only own hacks.
+    Return value: Returns a list of Hack objects.
+
+    Parameter:
+    -   contestId (Required): 	    Id of the contest.
+    """
+
+    url = f'https://codeforces.com/api/contest.hacks?contestId={contestId}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [Hack(**x) for x in info['result']]
+
+def contest_list(gym = False):
+    """
+    Returns information about all available contests.
+    Return value: Returns a list of Contest objects. If this
+    method is called not anonymously, then all available contests
+    for a calling user will be returned too, including mashups and
+    private gyms.
+
+    Parameter:
+    -   gym: 	Boolean. If true — than gym contests are returned. Otherwide, regular contests are returned.
+    """
+
+    url = f'https://codeforces.com/api/contest.list?gym=true={gym}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [Contest(**x) for x in info['result']]
+
+def contest_ratingChanges(contestId):
+    """
+    Returns rating changes after the contest.
+    Return value: Returns a list of RatingChange objects.
+
+    Parameter:
+    -   contestId (Required): 	Id of the contest.
+    """
+
+    url = f'https://codeforces.com/api/contest.ratingChanges?contestId={contestId}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [RatingChange(**x) for x in info['result']]
+
+def contest_standings(contestId, **kwargs):
+    """
+    Returns the description of the contest and the requested part
+    of the standings.
+    Return value: Returns object with three fields: "contest", "problems"
+    and "rows". Field "contest" contains a Contest object. Field "problems"
+    contains a list of Problem objects. Field "rows" contains a list of
+    RanklistRow objects.
+
+    Parameter:
+    -   contestId (Required): 	Id of the contest.
+    -   from: 	1-based index of the standings row to start the ranklist.
+    -   count: 	Number of standing rows to return.
+    -   handles: 	Semicolon-separated list of handles. No more than 10000 handles is accepted.
+    -   room: 	If specified, than only participants from this room will be shown in the result. If not — all the participants will be shown.
+    -   showUnofficial: 	If true than all participants (virtual, out of competition) are shown. Otherwise, only official contestants are shown.
+    """
+
+    url = f'https://codeforces.com/api/contest.standings?contestId={contestId}'
+    for x in kwargs:
+        url += f'&{x}={kwargs[x]}'
+    
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    result = (
+        Contest(**info['result']['contest']),
+        [Problem(**x) for x in info['result']['problems']],
+        [RanklistRow(**x) for x in info['result']['rows']]
+    )
+    return True, result
+    
+def contest_status(contestId, **kwargs):
+    """
+    Returns submissions for specified contest. Optionally can return 
+    submissions of specified user.
+    Return value: Returns a list of Submission objects, sorted in
+    decreasing order of submission id.
+
+    Parameter:
+    -   contestId (Required): 	Id of the contest
+    -   handle: 	Codeforces user handle.
+    -   from: 	1-based index of the first submission to return
+    -   count: 	Number of returned submissions.
+    """
+    
+    url = f' https://codeforces.com/api/contest.status?contestId={contestId}'
+    for x in kwargs:
+        url += f'&{x}={kwargs[x]}'
+    
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [Submission(**x) for x in info['result']]
+
+def problemset_problems(**kwargs):
+    """
+    Returns all problems from problemset. Problems can be filtered by tags.
+    Return value: Returns two lists. List of Problem objects and list of ProblemStatistics objects.
+
+    Parameter:
+    -   tags: 	Semicilon-separated list of tags.
+    -   problemsetName: 	Custom problemset's short name, like 'acmsguru'
+    """
+
+    url = 'https://codeforces.com/api/problemset.problems?'
+    for x in kwargs:
+        url += f'&{x}={kwargs[x]}'
+    
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    result = (
+        [Problem(**x) for x in info['result']['problems']],
+        [ProblemStatistics(**x) for x in info['result']['problemStatistics']]
+    )
+    return True, result
+
+def problemset_recentStatus(count, problemsetName = None):
+    """
+    Returns recent submissions.
+    Return value: Returns a list of Submission objects, sorted in decreasing order of submission id.
+
+    Parameter:
+    -   count (Required): 	Number of submissions to return. Can be up to 1000.
+    -   problemsetName: 	Custom problemset's short name, like 'acmsguru'
+    """
+    
+    url = f'https://codeforces.com/api/problemset.recentStatus?count={count}'
+    if problemsetName != None:
+        url += '&problemsetName={problemsetName}'
+    
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [Submission(**x) for x in info['result']]
+
+def recentActions(maxCount):
+    """
+    Returns recent actions.
+    Return value: Returns a list of RecentAction objects.
+
+    Parameter:
+    -   maxCount (Required): 	Number of recent actions to return. Can be up to 100.
+    """
+
+    url = f'https://codeforces.com/api/recentActions?maxCount={maxCount}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [RecentAction(**x) for x in info['result']]
+
+def user_blogEntries(handle):
+    """
+    Returns a list of all user's blog entries.
+    Return value: A list of BlogEntry objects in short form.
+
+    Parameter:
+    -   handle (Required): 	Codeforces user handle.
+    """
+
+    url = f'https://codeforces.com/api/user.blogEntries?handle={handle}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [BlogEntry(**x) for x in info['result']]
+
+def user_info(handles):
+    """
+    Returns information about one or several users.
+    Return value: Returns a list of User objects for requested handles.
+
+    Parameter:
+    -   handles (Required): 	Semicolon-separated list of handles. No 
+                                more than 10000 handles is accepted.
+    """
+
+    url = f'https://codeforces.com/api/user.info?handles={handles}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [User(**x) for x in info['result']]
+
+def user_ratedList(activeOnly = True):
+    """
+    Returns the list users who have participated in at least one rated contest.
+    Return value: Returns a list of User objects, sorted in decreasing order
+    of rating.
+
+    Parameter:
+    -   activeOnly 	Boolean. If true then only users, who participated in rated contest
+                    during the last month are returned. Otherwise, all users with at 
+                    least one rated contest are returned.
+    """
+
+    url = f'https://codeforces.com/api/user.ratedList?activeOnly={activeOnly}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [User(**x) for x in info['result']]
+
+def user_rating(handle):
+    """
+    Returns rating history of the specified user.
+    Return value: Returns a list of RatingChange objects for requested user.
+
+    Parameter:
+    -   handle (Required): 	Codeforces user handle.
+    """
+
+    url = f'https://codeforces.com/api/user.rating?handle={handle}'
+
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [RatingChange(**x) for x in info['result']]
+
+def user_status(handle, **kwarg):
+    """
+    Returns submissions of specified user.
+    Return value: Returns a list of Submission objects, sorted in decreasing 
+    order of submission id.
+
+    Parameter:
+    -   handle (Required): 	Codeforces user handle.
+    -   from: 	1-based index of the first submission to return.
+    -   count: 	Number of returned submissions.
+    """
+
+    url = f'https://codeforces.com/api/user.status?handle={handle}'
+    for x in kwargs:
+        url += f'&{x}={kwargs[x]}'
+    
+    info = requests.get(url)
+    if info.status_code != 200:
+        return False, None
+    info = info.json()
+    if info['status'] != 'OK':
+        return False, info['comment']
+    
+    return True, [Submission(**x) for x in info['result']]
 
 """
 Classes to store Codeforces's Object
@@ -310,10 +646,10 @@ class Hack(CodeforcesObject):
             setattr(self, 'hacker', Party(**kwargs['hacker']))
         
         if 'defender' in kwargs:
-            setattr(self, 'defender', Party(kwargs['defender']))
+            setattr(self, 'defender', Party(**kwargs['defender']))
         
         if 'problem' in kwargs:
-            setattr(self, 'problem', Problem(kwargs['problem']))
+            setattr(self, 'problem', Problem(**kwargs['problem']))
 
 class RanklistRow(CodeforcesObject):
     def __init__(self, **kwargs):
@@ -331,7 +667,7 @@ class RanklistRow(CodeforcesObject):
         self.__dict__.update(**kwargs)
 
         if 'party' in kwargs:
-            setattr(self, 'party', Party(kwargs['party']))
+            setattr(self, 'party', Party(**kwargs['party']))
         
         if 'problemResults' in kwargs:
             setattr(self, 'problemResults', [ProblemResult(**x) for x in kwargs['problemResults']])
